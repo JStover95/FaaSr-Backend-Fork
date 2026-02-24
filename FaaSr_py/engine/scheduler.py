@@ -347,6 +347,7 @@ class Scheduler:
         }
         # Create body for POST
         json_payload = json.dumps(payload_dict)
+        print(json_payload)
 
         # Issue POST request
         try:
