@@ -335,6 +335,12 @@
               "type": "number",
               "minimum": 1,
               "description": "Maximum storage for server-level default in MB"
+            },
+            "PulumiOrg": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$",
+              "description": "The user's Pulumi organization for secret storage."
             }
           },
           "additionalProperties": false,
@@ -374,6 +380,7 @@
                 "required": [
                   "Endpoint",
                   "Namespace",
+                  "PulumiOrg",
                   "API.key"
                 ]
               }
