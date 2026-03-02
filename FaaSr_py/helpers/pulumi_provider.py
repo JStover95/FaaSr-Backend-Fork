@@ -1,5 +1,35 @@
 import pulumi_esc_sdk as esc
 from pulumi_esc_sdk.exceptions import NotFoundException
+import time
+
+import requests
+
+
+def generate_temporary_access_token(access_token: str, expires_in: int = 1200) -> str:
+    """
+    Generate a temporary access token for the Pulumi environment.
+
+    Args
+    ----
+    access_token: str - The access token to use for authentication.
+    expires_in: int - The number of seconds from now until when the token will expire. Defaults to
+        1200 seconds (20 minutes).
+
+    Returns
+    -------
+    str - The temporary access token.
+    """
+    expires = int(time.time()) + expires_in
+    response = requests.post(
+        "https://api.pulumi.com/api/user/tokens",
+        headers={
+            "Accept": "application/vnd.pulumi+8",
+            "Content-Type": "application/json",
+            "Authorization": f"token {access_token}",
+        },
+        json={"description": "Temporary FaaSr access token", "expires": expires},
+    )
+    return response.json()["tokenValue"]
 
 
 class PulumiProvider():
@@ -8,7 +38,7 @@ class PulumiProvider():
 
     Args
     ----
-    org_name: str -- The name of the user's Pulumi organization for secret storage.
+    org_name: str - The name of the user's Pulumi organization for secret storage.
 
     Example usage:
     ```python
@@ -51,7 +81,7 @@ class PulumiProvider():
 
         Returns
         -------
-        esc.EnvironmentDefinition -- The Pulumi environment definition.
+        esc.EnvironmentDefinition - The Pulumi environment definition.
         """
         try:
             return self.client.get_environment(
@@ -83,7 +113,7 @@ class PulumiProvider():
 
         Returns
         -------
-        dict[str, str] -- The Pulumi environment's secrets.
+        dict[str, str] - The Pulumi environment's secrets.
         """
         _, values, _ = self.client.open_and_read_environment(
             self.org_name,
@@ -117,11 +147,11 @@ class PulumiProvider():
 
         Args
         ----
-        key: str -- The name of the secret to get.
+        key: str - The name of the secret to get.
 
         Returns
         -------
-        str | None -- The value of the secret, or None if the secret does not exist.
+        str | None - The value of the secret, or None if the secret does not exist.
         """
         if self._values is None:
             self._values = self._get_values()
@@ -133,8 +163,8 @@ class PulumiProvider():
 
         Args
         ----
-        key: str -- The name of the secret to set.
-        value: str -- The value of the secret to set.
+        key: str - The name of the secret to set.
+        value: str - The value of the secret to set.
         """
         self._has_new_values = True
         if self._values is None:
