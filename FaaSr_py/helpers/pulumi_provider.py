@@ -170,3 +170,22 @@ class PulumiProvider():
         if self._values is None:
             self._values = self._get_values()
         self._values[key] = value
+
+    def get_secrets(self, keys: list[str]) -> dict[str, str]:
+        """
+        Get multiple secrets from the Pulumi environment.
+
+        Missing keys are omitted from the returned dict.
+
+        Args
+        ----
+        keys: list[str] - The names of the secrets to get.
+
+        Returns
+        -------
+        dict[str, str] - Mapping of keys that exist to their secret values.
+        """
+        if self._values is None:
+            self._values = self._get_values()
+
+        return {key: self._values[key] for key in keys if key in self._values}

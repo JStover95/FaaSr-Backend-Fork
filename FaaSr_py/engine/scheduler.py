@@ -146,6 +146,10 @@ class Scheduler:
         # Create payload input
         overwritten_fields = self.faasr.overwritten
 
+        # Pass through Pulumi configuration if present
+        if "PulumiSecretStore" in self.faasr:
+            overwritten_fields["PulumiSecretStore"] = self.faasr["PulumiSecretStore"]
+
         # If UseSecretStore == True, don't send secrets to next action
         # Otherwise, we should send the compute servers & data stores
         # that contain secrets via overwritten
@@ -253,6 +257,10 @@ class Scheduler:
 
         overwritten_fields = self.faasr.overwritten
 
+        # Pass through Pulumi configuration if present
+        if "PulumiSecretStore" in self.faasr:
+            overwritten_fields["PulumiSecretStore"] = self.faasr["PulumiSecretStore"]
+
         # Don't send secrets to next action if UseSecretStore is set
         if next_compute_server.get("UseSecretStore"):
             if "ComputeServers" in overwritten_fields:
@@ -305,6 +313,28 @@ class Scheduler:
             function = f"{workflow_name}-{function}"
             logger.debug(f"Prepending workflow name. Full function: {function}")
 
+        # Validate OpenWhisk secret configuration when using secret store
+        if next_compute_server.get("UseSecretStore"):
+            # Check if Pulumi is configured at workflow level
+            if "PulumiSecretStore" not in self.faasr:
+                err_msg = (
+                    f"OpenWhisk action '{function}' has UseSecretStore=true but "
+                    "no PulumiSecretStore configured in workflow. "
+                    "Add PulumiSecretStore to workflow JSON or set UseSecretStore=false"
+                )
+                logger.error(err_msg)
+                sys.exit(1)
+
+            # Verify temp token exists
+            pulumi_cfg = self.faasr.get("PulumiSecretStore", {})
+            if "PulumiTempToken" not in pulumi_cfg:
+                err_msg = (
+                    f"OpenWhisk action '{function}' requires Pulumi temporary token "
+                    "but PulumiTempToken is missing from PulumiSecretStore config"
+                )
+                logger.error(err_msg)
+                sys.exit(1)
+
         # Get ow credentials
         endpoint = next_compute_server["Endpoint"]
         api_key = next_compute_server["APIkey"]
@@ -338,8 +368,20 @@ class Scheduler:
 
         overwritten_fields = self.faasr.overwritten
 
-        overwritten_fields["ComputeServers"] = self.faasr["ComputeServers"]
-        overwritten_fields["DataStores"] = self.faasr["DataStores"]
+        # Pass through Pulumi configuration
+        if "PulumiSecretStore" in self.faasr:
+            overwritten_fields["PulumiSecretStore"] = self.faasr["PulumiSecretStore"]
+
+        # Don't embed secrets in payload for OpenWhisk when using secret store
+        if next_compute_server.get("UseSecretStore"):
+            if "ComputeServers" in overwritten_fields:
+                del overwritten_fields["ComputeServers"]
+            if "DataStores" in overwritten_fields:
+                del overwritten_fields["DataStores"]
+            logger.info("OpenWhisk using secret store - secrets not included in payload")
+        else:
+            overwritten_fields["ComputeServers"] = self.faasr["ComputeServers"]
+            overwritten_fields["DataStores"] = self.faasr["DataStores"]
 
         payload_dict = {
             "OVERWRITTEN": overwritten_fields,
@@ -434,6 +476,10 @@ class Scheduler:
 
         # Create overwritten fields for the next action
         overwritten_fields = self.faasr.overwritten.copy()
+
+        # Pass through Pulumi configuration if present
+        if "PulumiSecretStore" in self.faasr:
+            overwritten_fields["PulumiSecretStore"] = self.faasr["PulumiSecretStore"]
 
         if next_compute_server.get("UseSecretStore"):
             # Next action will fetch secrets from its own secret store
@@ -570,6 +616,10 @@ class Scheduler:
 
         overwritten = self.faasr.overwritten.copy()
         # overwritten["FunctionInvoke"] = function
+
+        # Pass through Pulumi configuration if present
+        if "PulumiSecretStore" in self.faasr:
+            overwritten["PulumiSecretStore"] = self.faasr["PulumiSecretStore"]
 
         if next_compute_server.get("UseSecretStore"):
             # Remove secrets from overwritten fields

@@ -482,6 +482,25 @@
         }
       }
     },
+    "PulumiSecretStore": {
+      "type": "object",
+      "description": "Pulumi ESC secret store configuration for workflows",
+      "properties": {
+        "OrgName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Pulumi organization name for secret storage"
+        },
+        "PulumiTempToken": {
+          "type": "string",
+          "description": "Temporary access token (auto-generated, not user-specified)"
+        }
+      },
+      "required": [
+        "OrgName"
+      ],
+      "additionalProperties": false
+    },
     "VMConfig": {
   "type": "object",
   "description": "Configuration for VM orchestration",
